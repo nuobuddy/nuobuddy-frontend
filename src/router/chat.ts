@@ -4,7 +4,7 @@ const chatRoutes: RouteRecordRaw[] = [
   {
     path: '/chat',
     name: 'Chat',
-    component: () => import('@/views/test/ChatInputTestView.vue'),
+    component: () => import('@/views/chat/chatPage.vue'),
     meta: {
       title: 'Chat',
     },
