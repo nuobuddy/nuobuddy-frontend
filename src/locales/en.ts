@@ -16,6 +16,13 @@ export default {
     error: 'Operation failed',
     networkError: 'Network error, please try again later',
   },
+  sidebar: {
+    userMenu: {
+      logout: 'Log out',
+      switchLanguage: 'Switch language',
+      chatSettings: 'Chat settings',
+    },
+  },
   nav: {
     home: 'Home',
     dashboard: 'Dashboard',

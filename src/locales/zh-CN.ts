@@ -16,6 +16,13 @@ export default {
     error: '操作失败',
     networkError: '网络错误，请稍后重试',
   },
+  sidebar: {
+    userMenu: {
+      logout: '退出登录',
+      switchLanguage: '切换语言',
+      chatSettings: '对话设置',
+    },
+  },
   nav: {
     home: '首页',
     dashboard: '控制台',

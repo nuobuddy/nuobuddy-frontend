@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { MessageSquarePlus, PanelLeftClose, Search } from 'lucide-vue-next'
+import { Languages, LogOut, MessageSquarePlus, PanelLeftClose, Search, Settings } from 'lucide-vue-next'
 import {
   SidebarContent,
   SidebarFooter,
@@ -13,9 +13,18 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 import SidebarMenuButtonChild from '@/components/ui/sidebar/SidebarMenuButtonChild.vue'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+} from '@/components/ui/dropdown-menu'
+import UserCard from '@/components/common/userCard.vue'
+import { i18n } from '@/i18n'
 
 interface Props {
   open: boolean
@@ -69,6 +78,22 @@ const mockUser = {
   name: 'User Name',
   email: 'user@example.com',
   avatar: '',
+}
+
+const currentLocale = ref(i18n.global.locale.value)
+
+function switchLanguage(locale: 'zh-CN' | 'en') {
+  i18n.global.locale.value = locale
+  localStorage.setItem('nuobuddy-locale', locale)
+  currentLocale.value = locale
+}
+
+function handleLogout() {
+  console.log('logout')
+}
+
+function handleChatSettings() {
+  console.log('chat settings')
 }
 </script>
 
@@ -166,21 +191,38 @@ const mockUser = {
       </SidebarContent>
 
       <!-- User Footer -->
-      <SidebarFooter class="border-t border-sidebar-border">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButtonChild size="lg" class="w-full">
-              <Avatar class="h-8 w-8 rounded-lg">
-                <AvatarImage :src="mockUser.avatar" :alt="mockUser.name" />
-                <AvatarFallback class="rounded-lg">UN</AvatarFallback>
-              </Avatar>
-              <div class="grid flex-1 text-left text-sm leading-tight">
-                <span class="truncate font-medium">{{ mockUser.name }}</span>
-                <span class="truncate text-xs text-muted-foreground">{{ mockUser.email }}</span>
-              </div>
-            </SidebarMenuButtonChild>
-          </SidebarMenuItem>
-        </SidebarMenu>
+      <SidebarFooter>
+        <UserCard :user="mockUser" :mobile="mobile">
+          <DropdownMenuContent
+            :side="mobile ? 'top' : 'right'"
+            :align="mobile ? 'center' : 'end'"
+            class="w-48"
+          >
+            <DropdownMenuItem @click="handleChatSettings">
+              <Settings class="mr-2 h-4 w-4" />
+              {{ t('sidebar.userMenu.chatSettings') }}
+            </DropdownMenuItem>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <Languages class="mr-2 h-4 w-4" />
+                {{ t('sidebar.userMenu.switchLanguage') }}
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem @click="switchLanguage('zh-CN')">
+                  {{ t('common.chinese') }}
+                </DropdownMenuItem>
+                <DropdownMenuItem @click="switchLanguage('en')">
+                  {{ t('common.english') }}
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem @click="handleLogout" class="text-destructive focus:text-destructive">
+              <LogOut class="mr-2 h-4 w-4" />
+              {{ t('sidebar.userMenu.logout') }}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </UserCard>
       </SidebarFooter>
     </div>
   </aside>
