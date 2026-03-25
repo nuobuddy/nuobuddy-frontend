@@ -30,6 +30,17 @@ export default {
     logout: 'Logout',
     profile: 'Profile',
   },
+  admin: {
+    dashboard: 'Dashboard',
+    userManagement: 'User Management',
+    userList: 'User List',
+    createUser: 'Create User',
+    userDetail: 'User Detail',
+    conversationManagement: 'Conversation Management',
+    conversationAnalysis: 'Conversation Analysis',
+    conversationList: 'Conversation List',
+    systemSettings: 'System Settings',
+  },
   auth: {
     login: 'Login',
     logout: 'Logout',

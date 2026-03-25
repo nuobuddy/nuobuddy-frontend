@@ -6,6 +6,6 @@ const { t } = useI18n()
 
 <template>
   <div class="flex items-center justify-center h-full">
-    <p class="text-2xl font-semibold text-foreground">{{ t('admin.dashboard') }}</p>
+    <p class="text-2xl font-semibold text-foreground">{{ t('admin.userList') }}</p>
   </div>
 </template>

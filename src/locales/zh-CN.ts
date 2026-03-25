@@ -30,6 +30,17 @@ export default {
     logout: '退出登录',
     profile: '个人资料',
   },
+  admin: {
+    dashboard: '仪表盘',
+    userManagement: '用户管理',
+    userList: '用户列表',
+    createUser: '创建用户',
+    userDetail: '用户详情',
+    conversationManagement: '对话管理',
+    conversationAnalysis: '对话分析',
+    conversationList: '对话列表',
+    systemSettings: '系统设置',
+  },
   auth: {
     login: '登录',
     logout: '退出',
