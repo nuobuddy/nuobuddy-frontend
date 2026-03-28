@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Eye, EyeOff, Loader2, Check, X } from 'lucide-vue-next'
 import { Input } from '@/components/ui/input'
@@ -37,6 +37,13 @@ const canSubmit = computed(
     passwordsMatch.value,
 )
 
+const titleText = 'Nuobuddy: Your AI Companion for UNNC Journy.'
+const bodyText =
+  'Feeling overwhelmed? Get instant, accurate answers about courses, policies, campus life, and more.\nLet NuoBuddy guide you.'
+const typedTitle = ref('')
+const typedBody = ref('')
+let typingTimer: ReturnType<typeof setInterval> | null = null
+
 async function handleRegister() {
   if (!canSubmit.value || loading.value) return
   loading.value = true
@@ -51,6 +58,29 @@ async function handleRegister() {
     loading.value = false
   }
 }
+
+onMounted(() => {
+  let idx = 0
+  const fullText = `${titleText}\n${bodyText}`
+  typingTimer = setInterval(() => {
+    idx += 1
+    const current = fullText.slice(0, idx)
+    const [title, ...rest] = current.split('\n')
+    typedTitle.value = title ?? ''
+    typedBody.value = rest.join('\n')
+    if (idx >= fullText.length && typingTimer) {
+      clearInterval(typingTimer)
+      typingTimer = null
+    }
+  }, 28)
+})
+
+onUnmounted(() => {
+  if (typingTimer) {
+    clearInterval(typingTimer)
+    typingTimer = null
+  }
+})
 </script>
 
 <template>
@@ -65,12 +95,11 @@ async function handleRegister() {
       </div>
 
       <div>
-        <p class="text-2xl font-semibold text-foreground leading-snug">
-          Your AI companion,<br />
-          ready from day one.
-        </p>
-        <p class="mt-3 text-sm text-muted-foreground">
-          Join thousands of people who use NuoBuddy to work smarter and get more done.
+        <h2 class="text-2xl font-semibold text-foreground leading-snug min-h-[4.5rem]">
+          {{ typedTitle }}
+        </h2>
+        <p class="mt-4 text-sm text-muted-foreground whitespace-pre-line min-h-[4.5rem]">
+          {{ typedBody }}
         </p>
       </div>
     </div>
@@ -187,10 +216,7 @@ async function handleRegister() {
                 <Eye v-else class="w-4 h-4" />
               </button>
             </div>
-            <p
-              v-if="form.confirmPassword && !passwordsMatch"
-              class="text-xs text-destructive"
-            >
+            <p v-if="form.confirmPassword && !passwordsMatch" class="text-xs text-destructive">
               Passwords do not match
             </p>
           </div>

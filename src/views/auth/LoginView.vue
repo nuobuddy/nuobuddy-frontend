@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Eye, EyeOff, Loader2 } from 'lucide-vue-next'
 import { Input } from '@/components/ui/input'
@@ -18,6 +18,13 @@ const error = ref('')
 
 const canSubmit = computed(() => form.value.email.trim() && form.value.password.trim())
 
+const titleText = 'Nuobuddy: Your AI Companion for UNNC Journy.'
+const bodyText =
+  'Feeling overwhelmed? Get instant, accurate answers about courses, policies, campus life, and more.\nLet NuoBuddy guide you.'
+const typedTitle = ref('')
+const typedBody = ref('')
+let typingTimer: ReturnType<typeof setInterval> | null = null
+
 async function handleLogin() {
   if (!canSubmit.value || loading.value) return
   loading.value = true
@@ -32,6 +39,29 @@ async function handleLogin() {
     loading.value = false
   }
 }
+
+onMounted(() => {
+  let idx = 0
+  const fullText = `${titleText}\n${bodyText}`
+  typingTimer = setInterval(() => {
+    idx += 1
+    const current = fullText.slice(0, idx)
+    const [title, ...rest] = current.split('\n')
+    typedTitle.value = title ?? ''
+    typedBody.value = rest.join('\n')
+    if (idx >= fullText.length && typingTimer) {
+      clearInterval(typingTimer)
+      typingTimer = null
+    }
+  }, 28)
+})
+
+onUnmounted(() => {
+  if (typingTimer) {
+    clearInterval(typingTimer)
+    typingTimer = null
+  }
+})
 </script>
 
 <template>
@@ -46,11 +76,12 @@ async function handleLogin() {
       </div>
 
       <div>
-        <blockquote class="text-lg text-foreground leading-relaxed">
-          "The most powerful AI assistant I&apos;ve ever used. It transformed the way I work every
-          single day."
-        </blockquote>
-        <p class="mt-4 text-sm text-muted-foreground">— Early Access User</p>
+        <h2 class="text-2xl font-semibold text-foreground leading-snug min-h-[4.5rem]">
+          {{ typedTitle }}
+        </h2>
+        <p class="mt-4 text-sm text-muted-foreground whitespace-pre-line min-h-[4.5rem]">
+          {{ typedBody }}
+        </p>
       </div>
     </div>
 
@@ -68,9 +99,7 @@ async function handleLogin() {
         <!-- Header -->
         <div class="mb-8">
           <h1 class="text-2xl font-semibold tracking-tight text-foreground">Welcome back</h1>
-          <p class="mt-1.5 text-sm text-muted-foreground">
-            Sign in to your account to continue
-          </p>
+          <p class="mt-1.5 text-sm text-muted-foreground">Sign in to your account to continue</p>
         </div>
 
         <!-- Form -->
@@ -125,11 +154,7 @@ async function handleLogin() {
           <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
 
           <!-- Submit -->
-          <Button
-            type="submit"
-            class="w-full"
-            :disabled="!canSubmit || loading"
-          >
+          <Button type="submit" class="w-full" :disabled="!canSubmit || loading">
             <Loader2 v-if="loading" class="w-4 h-4 animate-spin" />
             {{ loading ? 'Signing in...' : 'Sign in' }}
           </Button>
