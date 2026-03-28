@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { Eye, EyeOff, Loader2, Check, X } from 'lucide-vue-next'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { api } from '@/lib/api'
 
 const router = useRouter()
 
@@ -49,11 +50,16 @@ async function handleRegister() {
   loading.value = true
   error.value = ''
   try {
-    // TODO: connect to real API
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    const response = await api.register(
+      form.value.username.trim(),
+      form.value.email.trim(),
+      form.value.password,
+    )
+    localStorage.setItem('auth_token', response.data.token)
+    localStorage.setItem('auth_user', JSON.stringify(response.data.user))
     router.push('/chat')
-  } catch {
-    error.value = 'Registration failed. Please try again.'
+  } catch (err) {
+    error.value = (err as Error).message || 'Registration failed. Please try again.'
   } finally {
     loading.value = false
   }
