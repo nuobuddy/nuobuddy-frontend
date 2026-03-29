@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-vue-next'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { api } from '@/lib/api'
 
 const router = useRouter()
 
@@ -42,11 +43,11 @@ const canSubmit = computed(
 async function sendCode() {
   if (!validEmail.value || sendingCode.value || countdown.value > 0) return
   sendingCode.value = true
+  error.value = ''
   try {
-    // TODO: connect to real API
-    await new Promise((resolve) => setTimeout(resolve, 800))
+    await api.sendCode(form.value.email.trim(), 'forgot-password')
     codeSent.value = true
-    countdown.value = 60
+    countdown.value = 30
     timer = setInterval(() => {
       countdown.value -= 1
       if (countdown.value <= 0) {
@@ -54,6 +55,8 @@ async function sendCode() {
         timer = null
       }
     }, 1000)
+  } catch (err) {
+    error.value = (err as Error).message || 'Failed to send verification code.'
   } finally {
     sendingCode.value = false
   }
@@ -64,11 +67,10 @@ async function handleSubmit() {
   submitting.value = true
   error.value = ''
   try {
-    // TODO: connect to real API
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await api.resetPassword(form.value.email.trim(), form.value.code.trim(), form.value.newPassword)
     router.push('/login')
-  } catch {
-    error.value = 'Something went wrong. Please try again.'
+  } catch (err) {
+    error.value = (err as Error).message || 'Something went wrong. Please try again.'
   } finally {
     submitting.value = false
   }
