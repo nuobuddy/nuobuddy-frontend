@@ -16,6 +16,8 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@unovis/ts": "^1.6.4",
+    "@unovis/vue": "^1.6.4",
     "@vueuse/core": "^14.2.1",
     "pinia": "^3.0.4",
     "reka-ui": "^2.9.2",

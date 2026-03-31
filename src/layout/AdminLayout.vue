@@ -35,9 +35,12 @@ const sidebarOpen = ref(!mobileQuery.matches)
     <AdminSideBar :open="sidebarOpen" :mobile="isMobile" @close="sidebarOpen = false" />
 
     <!-- Main Content -->
-    <div class="flex flex-col flex-1 bg-white overflow-hidden" :class="isMobile ? '' : 'rounded-lg shadow-md'">
+    <div
+      class="flex flex-col flex-1 bg-white overflow-hidden"
+      :class="isMobile ? '' : 'rounded-lg shadow-md'"
+    >
       <AdminHeader :sidebar-open="sidebarOpen" @toggle-sidebar="sidebarOpen = !sidebarOpen" />
-      <slot />
+      <RouterView class="flex-1 overflow-auto" />
     </div>
   </div>
 </template>
