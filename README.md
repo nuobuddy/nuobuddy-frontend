@@ -74,10 +74,24 @@ pnpm preview    # Preview the production build locally
 
 ## Configuration
 
-The dev server proxy is configured in [vite.config.ts](vite.config.ts). To point to a different backend, create a `.env.local` file:
+Copy the environment template and adjust as needed:
+
+```bash
+cp .env.example .env.local
+```
+
+### Environment Variables
+
+| Variable | Description | Default |
+|---|---|---|
+| `VITE_API_BASE` | Backend API base URL. All API requests are prefixed with this value. | `""` (empty) |
+
+**Development:** Leave `VITE_API_BASE` empty. The Vite dev server proxy ([vite.config.ts](vite.config.ts)) forwards `/user`, `/admin`, `/settings`, `/health`, and `/api` requests to `http://localhost:3000` automatically.
+
+**Production:** Set `VITE_API_BASE` to the full backend URL:
 
 ```env
-VITE_API_BASE_URL=https://api.example.com
+VITE_API_BASE=https://api.example.com
 ```
 
 ## Project Structure
