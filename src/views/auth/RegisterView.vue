@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { Eye, EyeOff, Loader2, Check, X } from 'lucide-vue-next'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { api } from '@/lib/api'
 
 const router = useRouter()
+const { t } = useI18n()
 
 const form = ref({
   username: '',
@@ -21,9 +23,9 @@ const loading = ref(false)
 const error = ref('')
 
 const passwordRules = computed(() => [
-  { label: 'At least 8 characters', met: form.value.password.length >= 8 },
-  { label: 'Contains a number', met: /\d/.test(form.value.password) },
-  { label: 'Contains uppercase', met: /[A-Z]/.test(form.value.password) },
+  { label: t('auth.registerPage.passwordRuleLength'), met: form.value.password.length >= 8 },
+  { label: t('auth.registerPage.passwordRuleNumber'), met: /\d/.test(form.value.password) },
+  { label: t('auth.registerPage.passwordRuleUppercase'), met: /[A-Z]/.test(form.value.password) },
 ])
 
 const passwordsMatch = computed(
@@ -38,9 +40,6 @@ const canSubmit = computed(
     passwordsMatch.value,
 )
 
-const titleText = 'Nuobuddy: Your AI Companion for UNNC Journy.'
-const bodyText =
-  'Feeling overwhelmed? Get instant, accurate answers about courses, policies, campus life, and more.\nLet NuoBuddy guide you.'
 const typedTitle = ref('')
 const typedBody = ref('')
 let typingTimer: ReturnType<typeof setInterval> | null = null
@@ -59,7 +58,7 @@ async function handleRegister() {
     localStorage.setItem('auth_user', JSON.stringify(response.data.user))
     router.push('/chat')
   } catch (err) {
-    error.value = (err as Error).message || 'Registration failed. Please try again.'
+    error.value = (err as Error).message || t('auth.registerPage.registerError')
   } finally {
     loading.value = false
   }
@@ -67,7 +66,7 @@ async function handleRegister() {
 
 onMounted(() => {
   let idx = 0
-  const fullText = `${titleText}\n${bodyText}`
+  const fullText = `${t('auth.registerPage.titleText')}\n${t('auth.registerPage.bodyText')}`
   typingTimer = setInterval(() => {
     idx += 1
     const current = fullText.slice(0, idx)
@@ -101,10 +100,10 @@ onUnmounted(() => {
       </div>
 
       <div>
-        <h2 class="text-2xl font-semibold text-foreground leading-snug min-h-[4.5rem]">
+        <h2 class="text-2xl font-semibold text-foreground leading-snug">
           {{ typedTitle }}
         </h2>
-        <p class="mt-4 text-sm text-muted-foreground whitespace-pre-line min-h-[4.5rem]">
+        <p class="mt-4 text-sm text-muted-foreground whitespace-pre-line">
           {{ typedBody }}
         </p>
       </div>
@@ -123,9 +122,11 @@ onUnmounted(() => {
       <div class="w-full max-w-sm">
         <!-- Header -->
         <div class="mb-8">
-          <h1 class="text-2xl font-semibold tracking-tight text-foreground">Create an account</h1>
+          <h1 class="text-2xl font-semibold tracking-tight text-foreground">
+            {{ t('auth.registerPage.createAccount') }}
+          </h1>
           <p class="mt-1.5 text-sm text-muted-foreground">
-            Get started for free — no credit card required
+            {{ t('auth.registerPage.getStarted') }}
           </p>
         </div>
 
@@ -133,33 +134,39 @@ onUnmounted(() => {
         <form class="space-y-4" @submit.prevent="handleRegister">
           <!-- Username -->
           <div class="space-y-1.5">
-            <label for="username" class="text-sm font-medium text-foreground">Username</label>
+            <label for="username" class="text-sm font-medium text-foreground">
+              {{ t('auth.registerPage.usernameLabel') }}
+            </label>
             <Input
               id="username"
               v-model="form.username"
               type="text"
               autocomplete="username"
-              placeholder="johndoe"
+              :placeholder="t('auth.registerPage.usernamePlaceholder')"
               :disabled="loading"
             />
           </div>
 
           <!-- Email -->
           <div class="space-y-1.5">
-            <label for="email" class="text-sm font-medium text-foreground">Email</label>
+            <label for="email" class="text-sm font-medium text-foreground">
+              {{ t('auth.registerPage.emailLabel') }}
+            </label>
             <Input
               id="email"
               v-model="form.email"
               type="email"
               autocomplete="email"
-              placeholder="you@example.com"
+              :placeholder="t('auth.registerPage.emailPlaceholder')"
               :disabled="loading"
             />
           </div>
 
           <!-- Password -->
           <div class="space-y-1.5">
-            <label for="password" class="text-sm font-medium text-foreground">Password</label>
+            <label for="password" class="text-sm font-medium text-foreground">
+              {{ t('auth.registerPage.passwordLabel') }}
+            </label>
             <div class="relative">
               <Input
                 id="password"
@@ -199,7 +206,7 @@ onUnmounted(() => {
           <!-- Confirm password -->
           <div class="space-y-1.5">
             <label for="confirm-password" class="text-sm font-medium text-foreground">
-              Confirm password
+              {{ t('auth.registerPage.confirmPasswordLabel') }}
             </label>
             <div class="relative">
               <Input
@@ -223,7 +230,7 @@ onUnmounted(() => {
               </button>
             </div>
             <p v-if="form.confirmPassword && !passwordsMatch" class="text-xs text-destructive">
-              Passwords do not match
+              {{ t('auth.registerPage.passwordMismatch') }}
             </p>
           </div>
 
@@ -233,18 +240,22 @@ onUnmounted(() => {
           <!-- Submit -->
           <Button type="submit" class="w-full" :disabled="!canSubmit || loading">
             <Loader2 v-if="loading" class="w-4 h-4 animate-spin" />
-            {{ loading ? 'Creating account...' : 'Create account' }}
+            {{
+              loading
+                ? t('auth.registerPage.creatingAccount')
+                : t('auth.registerPage.createAccountBtn')
+            }}
           </Button>
         </form>
 
         <!-- Login link -->
         <p class="mt-6 text-center text-sm text-muted-foreground">
-          Already have an account?
+          {{ t('auth.registerPage.alreadyHaveAccount') }}
           <RouterLink
             to="/login"
             class="font-medium text-foreground hover:underline underline-offset-4 transition-colors"
           >
-            Sign in
+            {{ t('auth.registerPage.signIn') }}
           </RouterLink>
         </p>
       </div>

@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { Eye, EyeOff, Loader2 } from 'lucide-vue-next'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { api } from '@/lib/api'
 
 const router = useRouter()
+const { t } = useI18n()
 
 const form = ref({
   email: '',
@@ -19,9 +21,6 @@ const error = ref('')
 
 const canSubmit = computed(() => form.value.email.trim() && form.value.password.trim())
 
-const titleText = 'Nuobuddy: Your AI Companion for UNNC Journy.'
-const bodyText =
-  'Feeling overwhelmed? Get instant, accurate answers about courses, policies, campus life, and more.\nLet NuoBuddy guide you.'
 const typedTitle = ref('')
 const typedBody = ref('')
 let typingTimer: ReturnType<typeof setInterval> | null = null
@@ -36,8 +35,7 @@ async function handleLogin() {
     localStorage.setItem('auth_user', JSON.stringify(response.data.user))
     router.push('/chat')
   } catch (err) {
-    error.value =
-      (err as Error).message || 'Login failed. Please check your credentials and try again.'
+    error.value = (err as Error).message || t('auth.loginPage.loginError')
   } finally {
     loading.value = false
   }
@@ -45,7 +43,7 @@ async function handleLogin() {
 
 onMounted(() => {
   let idx = 0
-  const fullText = `${titleText}\n${bodyText}`
+  const fullText = `${t('auth.loginPage.titleText')}\n${t('auth.loginPage.bodyText')}`
   typingTimer = setInterval(() => {
     idx += 1
     const current = fullText.slice(0, idx)
@@ -79,10 +77,10 @@ onUnmounted(() => {
       </div>
 
       <div>
-        <h2 class="text-2xl font-semibold text-foreground leading-snug min-h-[4.5rem]">
+        <h2 class="text-2xl font-semibold text-foreground leading-snug">
           {{ typedTitle }}
         </h2>
-        <p class="mt-4 text-sm text-muted-foreground whitespace-pre-line min-h-[4.5rem]">
+        <p class="mt-4 text-sm text-muted-foreground whitespace-pre-line">
           {{ typedBody }}
         </p>
       </div>
@@ -101,21 +99,27 @@ onUnmounted(() => {
       <div class="w-full max-w-sm">
         <!-- Header -->
         <div class="mb-8">
-          <h1 class="text-2xl font-semibold tracking-tight text-foreground">Welcome back</h1>
-          <p class="mt-1.5 text-sm text-muted-foreground">Sign in to your account to continue</p>
+          <h1 class="text-2xl font-semibold tracking-tight text-foreground">
+            {{ t('auth.loginPage.welcomeBack') }}
+          </h1>
+          <p class="mt-1.5 text-sm text-muted-foreground">
+            {{ t('auth.loginPage.signInToContinue') }}
+          </p>
         </div>
 
         <!-- Form -->
         <form class="space-y-4" @submit.prevent="handleLogin">
           <!-- Email -->
           <div class="space-y-1.5">
-            <label for="email" class="text-sm font-medium text-foreground">Email</label>
+            <label for="email" class="text-sm font-medium text-foreground">
+              {{ t('auth.loginPage.emailLabel') }}
+            </label>
             <Input
               id="email"
               v-model="form.email"
               type="email"
               autocomplete="email"
-              placeholder="you@example.com"
+              :placeholder="t('auth.loginPage.emailPlaceholder')"
               :disabled="loading"
             />
           </div>
@@ -123,12 +127,14 @@ onUnmounted(() => {
           <!-- Password -->
           <div class="space-y-1.5">
             <div class="flex items-center justify-between">
-              <label for="password" class="text-sm font-medium text-foreground">Password</label>
+              <label for="password" class="text-sm font-medium text-foreground">
+                {{ t('auth.loginPage.passwordLabel') }}
+              </label>
               <RouterLink
                 to="/forgot-password"
                 class="text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
-                Forgot password?
+                {{ t('auth.loginPage.forgotPassword') }}
               </RouterLink>
             </div>
             <div class="relative">
@@ -159,7 +165,7 @@ onUnmounted(() => {
           <!-- Submit -->
           <Button type="submit" class="w-full" :disabled="!canSubmit || loading">
             <Loader2 v-if="loading" class="w-4 h-4 animate-spin" />
-            {{ loading ? 'Signing in...' : 'Sign in' }}
+            {{ loading ? t('auth.loginPage.signingIn') : t('auth.loginPage.signIn') }}
           </Button>
         </form>
 
@@ -170,19 +176,19 @@ onUnmounted(() => {
           </div>
           <div class="relative flex justify-center">
             <span class="bg-background px-3 text-xs text-muted-foreground uppercase tracking-wide">
-              or
+              {{ t('auth.loginPage.or') }}
             </span>
           </div>
         </div>
 
         <!-- Register link -->
         <p class="text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?
+          {{ t('auth.loginPage.noAccount') }}
           <RouterLink
             to="/register"
             class="font-medium text-foreground hover:underline underline-offset-4 transition-colors"
           >
-            Create one
+            {{ t('auth.loginPage.createOne') }}
           </RouterLink>
         </p>
       </div>
