@@ -238,5 +238,22 @@ export default {
     outputTokens: 'Output',
     totalTokens: 'Total',
     tokensUsed: '{count} tokens used',
+
+    // Share feature
+    share: {
+      button: 'Share',
+      dialogTitle: 'Share Conversation',
+      dialogDescription: 'Copy the link below to share with others',
+      copyLink: 'Copy link',
+      copied: 'Copied',
+      cancelShare: 'Cancel Share',
+      close: 'Close',
+      noAccessTitle: 'No Access',
+      noAccessMessage:
+        'This share link is invalid or you do not have access. Please contact the person who shared this link.',
+      loading: 'Loading...',
+      noMessages: 'No messages yet',
+      noMessagesDesc: 'This conversation has no messages yet',
+    },
   },
 }

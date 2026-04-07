@@ -237,5 +237,21 @@ export default {
     outputTokens: '输出',
     totalTokens: '合计',
     tokensUsed: '已使用 {count} Tokens',
+
+    // 分享功能
+    share: {
+      button: '分享',
+      dialogTitle: '分享对话',
+      dialogDescription: '复制以下链接分享给他人',
+      copyLink: '复制链接',
+      copied: '已复制',
+      cancelShare: '取消分享',
+      close: '关闭',
+      noAccessTitle: '无访问权限',
+      noAccessMessage: '该分享链接已失效或无权访问，请联系链接提供者',
+      loading: '加载中...',
+      noMessages: '暂无消息',
+      noMessagesDesc: '该对话还没有消息',
+    },
   },
 }

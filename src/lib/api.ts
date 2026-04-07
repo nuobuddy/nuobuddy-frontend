@@ -81,4 +81,36 @@ export const api = {
       createdAt: string
     }>('/user/profile/update', { method: 'POST', token, body: payload })
   },
+
+  // Share API
+  createShare(conversationId: string, token: string) {
+    return request<{ shareUrl: string }>(`/chat/conversations/${conversationId}/share`, {
+      method: 'POST',
+      token,
+    })
+  },
+  deleteShare(conversationId: string, token: string) {
+    return request<null>(`/chat/conversations/${conversationId}/share`, {
+      method: 'DELETE',
+      token,
+    })
+  },
+  getConversation(conversationId: string, share?: boolean, token?: string) {
+    const params = share ? '?share=1' : ''
+    return request<{
+      id: string
+      title: string
+      difyConversationId: string | null
+      createdAt: string
+      updatedAt: string
+      messages: Array<{
+        id: string
+        role: 'user' | 'assistant'
+        content: string
+        timestamp: string
+      }>
+      share: boolean
+      accessible: boolean
+    }>(`/chat/conversations/${conversationId}${params}`, { token })
+  },
 }
