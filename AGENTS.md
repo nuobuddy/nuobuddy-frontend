@@ -178,6 +178,48 @@ Before each commit, the following checks run automatically:
 
 ## Common Patterns
 
+### Toast Notifications (Sonner)
+
+Use `vue-sonner` for all user-facing feedback messages. The `<Toaster />` is mounted globally in `App.vue` — no per-component setup needed.
+
+```typescript
+import { toast } from 'vue-sonner'
+
+// Basic
+toast('Message sent')
+
+// Typed variants
+toast.success('Saved successfully')
+toast.error('Something went wrong')
+toast.warning('Low disk space')
+toast.info('New update available')
+
+// With description
+toast.success('Profile updated', {
+  description: 'Your changes have been saved.',
+})
+
+// Loading → resolve
+const toastId = toast.loading('Uploading...')
+toast.success('Upload complete', { id: toastId })
+
+// Promise
+toast.promise(myAsyncFn(), {
+  loading: 'Saving...',
+  success: 'Saved!',
+  error: 'Failed to save.',
+})
+```
+
+**Guidelines**:
+
+1. **Always use `toast` instead of `alert` or custom notification components** for user feedback.
+2. **Match the variant to the outcome**: `success` for completed actions, `error` for failures, `warning` for recoverable issues, `info` for neutral updates.
+3. **Keep messages short** — one line for the title, optional `description` for detail.
+4. **Use `toast.promise`** when wrapping async operations to avoid manual loading/success/error sequencing.
+5. **Use `id`** to replace a `loading` toast with a result toast so only one notification is shown at a time.
+6. **Do not duplicate feedback** — if an error is already shown inline (e.g., a form field error), do not also fire a `toast.error`.
+
 ### API Calls
 
 ```typescript
