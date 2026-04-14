@@ -17,6 +17,7 @@ export const useChatStore = defineStore('chat', () => {
   const error = ref<string | null>(null)
   const streaming = ref(false)
   const streamingMessage = ref('')
+  const streamingTaskId = ref<string | null>(null)
 
   // Pagination
   const currentPage = ref(1)
@@ -126,6 +127,17 @@ export const useChatStore = defineStore('chat', () => {
 
   // ==================== Chat Messaging (SSE) ====================
 
+  function removePendingAssistantPlaceholder() {
+    if (!currentConversation.value?.messages.length) return
+
+    const lastIndex = currentConversation.value.messages.length - 1
+    const lastMessage = currentConversation.value.messages[lastIndex]
+
+    if (lastMessage?.role === 'assistant' && !lastMessage.content.trim()) {
+      currentConversation.value.messages.splice(lastIndex, 1)
+    }
+  }
+
   async function sendMessage(
     conversationId: string,
     query: string,
@@ -134,6 +146,7 @@ export const useChatStore = defineStore('chat', () => {
   ) {
     streaming.value = true
     streamingMessage.value = ''
+    streamingTaskId.value = null
     error.value = null
 
     try {
@@ -167,6 +180,9 @@ export const useChatStore = defineStore('chat', () => {
         (event: SSEEvent) => {
           switch (event.event) {
             case 'delta':
+              if (event.taskId) {
+                streamingTaskId.value = event.taskId
+              }
               streamingMessage.value += event.content
               // Update the last assistant message in real-time
               if (currentConversation.value?.messages.length) {
@@ -177,8 +193,18 @@ export const useChatStore = defineStore('chat', () => {
                 }
               }
               break
+            case 'task':
+              if (event.taskId) {
+                streamingTaskId.value = event.taskId
+              }
+              break
             case 'done': {
               streaming.value = false
+              if (!streamingMessage.value.trim()) {
+                removePendingAssistantPlaceholder()
+              }
+              streamingMessage.value = ''
+              streamingTaskId.value = null
               // Update conversation's difyConversationId if returned
               if (event.conversationId && currentConversation.value) {
                 currentConversation.value.difyConversationId = event.conversationId
@@ -202,6 +228,9 @@ export const useChatStore = defineStore('chat', () => {
             case 'error':
               error.value = event.message || 'An error occurred during streaming'
               streaming.value = false
+              streamingMessage.value = ''
+              streamingTaskId.value = null
+              removePendingAssistantPlaceholder()
               break
             case 'ping':
               // Heartbeat, ignore
@@ -218,10 +247,16 @@ export const useChatStore = defineStore('chat', () => {
       // Ignore AbortError (user cancelled)
       if ((err as Error).name === 'AbortError') {
         streaming.value = false
+        streamingMessage.value = ''
+        streamingTaskId.value = null
+        removePendingAssistantPlaceholder()
         return
       }
       error.value = err instanceof Error ? err.message : 'Failed to send message'
       streaming.value = false
+      streamingMessage.value = ''
+      streamingTaskId.value = null
+      removePendingAssistantPlaceholder()
       throw err
     } finally {
       abortStreaming = null
@@ -234,6 +269,26 @@ export const useChatStore = defineStore('chat', () => {
       abortStreaming = null
     }
     streaming.value = false
+    streamingMessage.value = ''
+    streamingTaskId.value = null
+    removePendingAssistantPlaceholder()
+  }
+
+  async function stopGeneration() {
+    const taskId = streamingTaskId.value
+
+    stopStreaming()
+
+    if (!taskId) {
+      return
+    }
+
+    try {
+      const { api } = await import('@/lib/api')
+      await api.stopMessageGeneration(taskId)
+    } catch {
+      // Local streaming is already stopped. Ignore remote stop failures.
+    }
   }
 
   // ==================== Share ====================
@@ -294,6 +349,7 @@ export const useChatStore = defineStore('chat', () => {
     error,
     streaming,
     streamingMessage,
+    streamingTaskId,
     currentPage,
     totalPages,
     totalItems,
@@ -309,6 +365,7 @@ export const useChatStore = defineStore('chat', () => {
     fetchConversationDetail,
     sendMessage,
     stopStreaming,
+    stopGeneration,
     createShare,
     deleteShare,
     clearCurrentConversation,

@@ -84,7 +84,8 @@ export type SystemSettings = Record<string, string>
 
 // SSE event types for chat streaming
 export type SSEEvent =
-  | { event: 'delta'; content: string }
+  | { event: 'delta'; content: string; taskId?: string }
+  | { event: 'task'; taskId: string }
   | { event: 'done'; conversationId: string }
   | { event: 'error'; message: string }
   | { event: 'ping' }
@@ -328,7 +329,19 @@ export const api = {
                 const parsed = JSON.parse(currentData)
                 switch (currentEvent) {
                   case 'delta':
-                    onMessage({ event: 'delta', content: parsed.content ?? '' })
+                    onMessage({
+                      event: 'delta',
+                      content: parsed.content ?? '',
+                      taskId:
+                        typeof parsed.taskId === 'string'
+                          ? parsed.taskId
+                          : typeof parsed.task_id === 'string'
+                            ? parsed.task_id
+                            : undefined,
+                    })
+                    break
+                  case 'task':
+                    onMessage({ event: 'task', taskId: parsed.taskId ?? parsed.task_id ?? '' })
                     break
                   case 'done':
                     onMessage({ event: 'done', conversationId: parsed.conversationId ?? '' })
@@ -365,6 +378,17 @@ export const api = {
       promise,
       abort: () => controller.abort(),
     }
+  },
+
+  /**
+   * Stop an in-progress chat message generation task.
+   * POST /chat/messages/{taskId}/stop
+   */
+  async stopMessageGeneration(taskId: string): Promise<{ result: string }> {
+    const response = await axiosInstance.post<{ result: string }>(
+      `/chat/messages/${encodeURIComponent(taskId)}/stop`,
+    )
+    return response.data
   },
 
   // ==================== Share Endpoints ====================

@@ -287,7 +287,7 @@ async function handleSend(message: string) {
 }
 
 function handleStop() {
-  chatStore.stopStreaming()
+  void chatStore.stopGeneration()
 }
 
 async function handleAttach(file: File) {
