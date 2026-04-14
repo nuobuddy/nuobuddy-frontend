@@ -1,6 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Conversation, ConversationDetail, Message, SSEEvent } from '@/lib/api'
+import type {
+  ChatMessageFile,
+  Conversation,
+  ConversationDetail,
+  Message,
+  MessageAttachment,
+  SSEEvent,
+} from '@/lib/api'
 
 export const useChatStore = defineStore('chat', () => {
   // State
@@ -119,7 +126,12 @@ export const useChatStore = defineStore('chat', () => {
 
   // ==================== Chat Messaging (SSE) ====================
 
-  async function sendMessage(conversationId: string, query: string) {
+  async function sendMessage(
+    conversationId: string,
+    query: string,
+    files?: ChatMessageFile[],
+    attachment?: MessageAttachment,
+  ) {
     streaming.value = true
     streamingMessage.value = ''
     error.value = null
@@ -134,6 +146,7 @@ export const useChatStore = defineStore('chat', () => {
           role: 'user',
           content: query,
           timestamp: new Date().toISOString(),
+          ...(attachment ? { attachments: [attachment] } : {}),
         }
         currentConversation.value.messages.push(userMessage)
 
@@ -148,50 +161,56 @@ export const useChatStore = defineStore('chat', () => {
       }
 
       // Send message via SSE
-      const { promise, abort } = api.sendMessage(conversationId, query, (event: SSEEvent) => {
-        switch (event.event) {
-          case 'delta':
-            streamingMessage.value += event.content
-            // Update the last assistant message in real-time
-            if (currentConversation.value?.messages.length) {
-              const lastMsg =
-                currentConversation.value.messages[currentConversation.value.messages.length - 1]
-              if (lastMsg?.role === 'assistant') {
-                lastMsg.content = streamingMessage.value
-              }
-            }
-            break
-          case 'done': {
-            streaming.value = false
-            // Update conversation's difyConversationId if returned
-            if (event.conversationId && currentConversation.value) {
-              currentConversation.value.difyConversationId = event.conversationId
-            }
-            // Refresh conversation in background to get proper message IDs from server
-            // Use a silent fetch that doesn't reset loading state or wipe current messages
-            ;(async () => {
-              try {
-                const { api } = await import('@/lib/api')
-                const detail = await api.getConversationDetail(conversationId)
-                // Only update if we're not streaming again
-                if (!streaming.value) {
-                  currentConversation.value = detail
+      const { promise, abort } = api.sendMessage(
+        conversationId,
+        query,
+        (event: SSEEvent) => {
+          switch (event.event) {
+            case 'delta':
+              streamingMessage.value += event.content
+              // Update the last assistant message in real-time
+              if (currentConversation.value?.messages.length) {
+                const lastMsg =
+                  currentConversation.value.messages[currentConversation.value.messages.length - 1]
+                if (lastMsg?.role === 'assistant') {
+                  lastMsg.content = streamingMessage.value
                 }
-              } catch {
-                // ignore background refresh errors
               }
-            })()
-            break
+              break
+            case 'done': {
+              streaming.value = false
+              // Update conversation's difyConversationId if returned
+              if (event.conversationId && currentConversation.value) {
+                currentConversation.value.difyConversationId = event.conversationId
+              }
+              // Refresh conversation in background to get proper message IDs from server
+              // Use a silent fetch that doesn't reset loading state or wipe current messages
+              ;(async () => {
+                try {
+                  const { api } = await import('@/lib/api')
+                  const detail = await api.getConversationDetail(conversationId)
+                  // Only update if we're not streaming again
+                  if (!streaming.value) {
+                    currentConversation.value = detail
+                  }
+                } catch {
+                  // ignore background refresh errors
+                }
+              })()
+              break
+            }
+            case 'error':
+              error.value = event.message || 'An error occurred during streaming'
+              streaming.value = false
+              break
+            case 'ping':
+              // Heartbeat, ignore
+              break
           }
-          case 'error':
-            error.value = event.message || 'An error occurred during streaming'
-            streaming.value = false
-            break
-          case 'ping':
-            // Heartbeat, ignore
-            break
-        }
-      })
+        },
+        files,
+        attachment ? [attachment] : undefined,
+      )
 
       abortStreaming = abort
       await promise

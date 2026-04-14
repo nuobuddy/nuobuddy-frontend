@@ -11,6 +11,9 @@ interface Props {
   disabled?: boolean
   placeholder?: string
   maxLength?: number
+  attachmentName?: string | null
+  attachmentPreviewUrl?: string | null
+  attachmentUploading?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -19,6 +22,9 @@ const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   placeholder: undefined,
   maxLength: undefined,
+  attachmentName: null,
+  attachmentPreviewUrl: null,
+  attachmentUploading: false,
 })
 
 const emit = defineEmits<{
@@ -26,7 +32,8 @@ const emit = defineEmits<{
   send: [message: string]
   stop: []
   fullscreen: []
-  attach: []
+  attach: [file: File]
+  removeAttachment: []
 }>()
 
 // Composables
@@ -34,6 +41,7 @@ const { t } = useI18n()
 
 // Reactive state
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
+const fileInputRef = ref<HTMLInputElement | null>(null)
 
 // Computed
 const inputValue = computed({
@@ -89,7 +97,20 @@ function handleFullscreen() {
 }
 
 function handleAttach() {
-  emit('attach')
+  fileInputRef.value?.click()
+}
+
+function handleFileChange(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+
+  emit('attach', file)
+  target.value = ''
+}
+
+function handleRemoveAttachment() {
+  emit('removeAttachment')
 }
 
 // Send button state classes
@@ -107,9 +128,46 @@ const sendButtonClass = computed(() =>
 
 <template>
   <div class="w-full max-w-4xl">
+    <input ref="fileInputRef" type="file" class="hidden" @change="handleFileChange" />
+
     <div
       class="rounded-2xl border border-border bg-card px-4 pb-3 pt-4 shadow-sm transition-shadow focus-within:shadow-md"
     >
+      <div
+        v-if="attachmentName"
+        class="mb-3 flex items-center gap-3 rounded-lg border border-border bg-muted/40 p-2"
+      >
+        <div class="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-border bg-muted">
+          <img
+            v-if="attachmentPreviewUrl"
+            :src="attachmentPreviewUrl"
+            :alt="attachmentName"
+            class="h-full w-full object-cover"
+          />
+          <div
+            v-else
+            class="flex h-full w-full items-center justify-center text-xs text-muted-foreground"
+          >
+            <Paperclip class="h-4 w-4" />
+          </div>
+        </div>
+
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm text-foreground">{{ attachmentName }}</p>
+          <p v-if="attachmentUploading" class="text-xs text-muted-foreground">
+            {{ t('chat.uploadingFile') }}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="shrink-0 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          @click="handleRemoveAttachment"
+        >
+          {{ t('chat.removeAttachment') }}
+        </button>
+      </div>
+
       <!-- Textarea -->
       <textarea
         ref="textareaRef"

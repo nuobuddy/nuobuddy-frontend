@@ -9,6 +9,8 @@ import ChatHeader from '@/components/chat/ChatHeader.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
 import RecommandCard from '@/components/chat/RecommandCard.vue'
 import type { RecommendQuestion } from '@/components/chat/RecommandCard.vue'
+import { api } from '@/lib/api'
+import type { ChatMessageFile, MessageAttachment, UploadedChatFile } from '@/lib/api'
 import { useChatStore } from '@/stores/chat'
 import { useAuthStore } from '@/stores/auth'
 
@@ -57,6 +59,11 @@ onMounted(() => {
 onUnmounted(() => {
   mobileQuery.removeEventListener('change', onMediaChange)
   chatStore.stopStreaming()
+  revokeAttachmentPreviewUrl()
+  Object.values(messageAttachmentPreviewUrls.value).forEach((url) => {
+    URL.revokeObjectURL(url)
+  })
+  messageAttachmentPreviewUrls.value = {}
 })
 
 // Watch for route changes (switching between conversations)
@@ -108,6 +115,13 @@ async function checkShareAccess() {
 const sidebarOpen = ref(!mobileQuery.matches)
 const inputValue = ref('')
 const messageListRef = ref<HTMLDivElement | null>(null)
+const pendingAttachment = ref<UploadedChatFile | null>(null)
+const pendingAttachmentName = ref<string | null>(null)
+const attachmentPreviewUrl = ref<string | null>(null)
+const attachmentUploading = ref(false)
+const attachmentError = ref<string | null>(null)
+const messageAttachmentPreviewUrls = ref<Record<string, string>>({})
+const messageAttachmentPreviewLoading = ref<Record<string, boolean>>({})
 // Flag to suppress route watcher when we programmatically navigate after creating a conversation
 let suppressNextRouteWatch = false
 
@@ -115,6 +129,9 @@ let suppressNextRouteWatch = false
 const messages = computed(() => chatStore.currentConversation?.messages ?? [])
 const generating = computed(() => chatStore.streaming)
 const chatTitle = computed(() => chatStore.currentConversation?.title ?? undefined)
+const inputAttachmentName = computed(
+  () => pendingAttachment.value?.name ?? pendingAttachmentName.value,
+)
 
 // --- Helpers ---
 function scrollToBottom() {
@@ -125,12 +142,62 @@ function scrollToBottom() {
   })
 }
 
+function revokeAttachmentPreviewUrl() {
+  if (!attachmentPreviewUrl.value) return
+  URL.revokeObjectURL(attachmentPreviewUrl.value)
+  attachmentPreviewUrl.value = null
+}
+
+function getMessageAttachmentPreviewUrl(fileId: string): string | null {
+  return messageAttachmentPreviewUrls.value[fileId] ?? null
+}
+
+async function ensureMessageAttachmentPreview(attachment: MessageAttachment): Promise<void> {
+  if (attachment.fileType !== 'image') return
+  if (messageAttachmentPreviewUrls.value[attachment.id]) return
+  if (messageAttachmentPreviewLoading.value[attachment.id]) return
+
+  messageAttachmentPreviewLoading.value = {
+    ...messageAttachmentPreviewLoading.value,
+    [attachment.id]: true,
+  }
+
+  try {
+    const blob = await api.getChatFilePreview(attachment.id)
+    const objectUrl = URL.createObjectURL(blob)
+    messageAttachmentPreviewUrls.value = {
+      ...messageAttachmentPreviewUrls.value,
+      [attachment.id]: objectUrl,
+    }
+  } catch {
+    // Ignore preview failures and keep filename fallback UI.
+  } finally {
+    messageAttachmentPreviewLoading.value = {
+      ...messageAttachmentPreviewLoading.value,
+      [attachment.id]: false,
+    }
+  }
+}
+
 // Auto-scroll when streaming message updates
 watch(
   () => chatStore.streamingMessage,
   () => {
     scrollToBottom()
   },
+)
+
+watch(
+  () => messages.value,
+  (list) => {
+    list.forEach((message) => {
+      const attachments = message.attachments ?? []
+      attachments.forEach((attachment) => {
+        void ensureMessageAttachmentPreview(attachment)
+      })
+    })
+  },
+  { immediate: true, deep: true },
 )
 
 // --- Handlers ---
@@ -170,9 +237,50 @@ async function handleSend(message: string) {
     }
   }
 
+  const files: ChatMessageFile[] = pendingAttachment.value
+    ? [
+        {
+          type: pendingAttachment.value.fileType,
+          transfer_method: 'local_file',
+          upload_file_id: pendingAttachment.value.id,
+        },
+      ]
+    : []
+
+  const attachmentForMessage: MessageAttachment | undefined = pendingAttachment.value
+    ? {
+        id: pendingAttachment.value.id,
+        name: pendingAttachment.value.name,
+        size: pendingAttachment.value.size,
+        mimeType: pendingAttachment.value.mimeType,
+        fileType: pendingAttachment.value.fileType,
+      }
+    : undefined
+
+  if (
+    attachmentForMessage &&
+    attachmentForMessage.fileType === 'image' &&
+    attachmentPreviewUrl.value
+  ) {
+    messageAttachmentPreviewUrls.value = {
+      ...messageAttachmentPreviewUrls.value,
+      [attachmentForMessage.id]: attachmentPreviewUrl.value,
+    }
+  }
+
+  pendingAttachment.value = null
+  pendingAttachmentName.value = null
+  attachmentPreviewUrl.value = null
+  attachmentError.value = null
+
   // Send message via SSE
   try {
-    await chatStore.sendMessage(targetConversationId, message)
+    await chatStore.sendMessage(
+      targetConversationId,
+      message,
+      files.length > 0 ? files : undefined,
+      attachmentForMessage,
+    )
   } catch (err) {
     console.error('Failed to send message:', err)
   }
@@ -180,6 +288,38 @@ async function handleSend(message: string) {
 
 function handleStop() {
   chatStore.stopStreaming()
+}
+
+async function handleAttach(file: File) {
+  attachmentUploading.value = true
+  attachmentError.value = null
+  pendingAttachmentName.value = file.name
+  pendingAttachment.value = null
+
+  revokeAttachmentPreviewUrl()
+  if (file.type.startsWith('image/')) {
+    attachmentPreviewUrl.value = URL.createObjectURL(file)
+  }
+
+  try {
+    const uploadedFile = await api.uploadChatFile(file)
+    pendingAttachment.value = uploadedFile
+    pendingAttachmentName.value = null
+  } catch (err) {
+    pendingAttachment.value = null
+    pendingAttachmentName.value = null
+    revokeAttachmentPreviewUrl()
+    attachmentError.value = err instanceof Error ? err.message : t('chat.uploadFailed')
+  } finally {
+    attachmentUploading.value = false
+  }
+}
+
+function handleRemoveAttachment() {
+  pendingAttachment.value = null
+  pendingAttachmentName.value = null
+  revokeAttachmentPreviewUrl()
+  attachmentError.value = null
 }
 
 function formatTime(dateStr: string) {
@@ -321,6 +461,35 @@ function handleRecommendSelect(question: string) {
             <!-- User message -->
             <div v-if="msg.role === 'user'" class="flex justify-end">
               <div class="max-w-[70%]">
+                <!-- Attachment preview above the message bubble -->
+                <div
+                  v-if="msg.attachments && msg.attachments.length > 0"
+                  class="mb-1.5 flex justify-end"
+                >
+                  <div class="grid grid-cols-1 gap-2">
+                    <template v-for="attachment in msg.attachments" :key="attachment.id">
+                      <div
+                        v-if="
+                          attachment.fileType === 'image' &&
+                          getMessageAttachmentPreviewUrl(attachment.id)
+                        "
+                        class="h-16 w-16 overflow-hidden rounded-md shadow-md"
+                      >
+                        <img
+                          :src="getMessageAttachmentPreviewUrl(attachment.id) ?? undefined"
+                          :alt="attachment.name"
+                          class="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div
+                        v-else-if="attachment.fileType === 'image'"
+                        class="flex h-16 w-16 items-center justify-center rounded-md bg-muted text-xs text-muted-foreground shadow-md"
+                      >
+                        ...
+                      </div>
+                    </template>
+                  </div>
+                </div>
                 <div
                   class="rounded-2xl rounded-tr-sm bg-primary text-primary-foreground px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap"
                 >
@@ -362,12 +531,25 @@ function handleRecommendSelect(question: string) {
         </div>
 
         <!-- Input Area (hidden in share mode) -->
-        <div v-if="!isShareMode" class="flex items-center justify-center px-6 py-4">
+        <div
+          v-if="!isShareMode"
+          class="flex w-full flex-col items-center justify-center gap-2 px-6 py-4"
+        >
+          <div v-if="attachmentError" class="w-full max-w-4xl text-sm text-destructive">
+            {{ attachmentError }}
+          </div>
+
           <ChatInput
             v-model="inputValue"
             :generating="generating"
+            :disabled="attachmentUploading"
+            :attachment-name="inputAttachmentName"
+            :attachment-preview-url="attachmentPreviewUrl"
+            :attachment-uploading="attachmentUploading"
             @send="handleSend"
             @stop="handleStop"
+            @attach="handleAttach"
+            @remove-attachment="handleRemoveAttachment"
           />
         </div>
       </template>
