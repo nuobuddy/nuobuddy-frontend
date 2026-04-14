@@ -33,6 +33,7 @@ import {
   DropdownMenuSubTrigger,
 } from '@/components/ui/dropdown-menu'
 import UserCard from '@/components/common/userCard.vue'
+import ChatSettings from '@/components/chat/ChatSettings.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useChatStore } from '@/stores/chat'
 import { i18n } from '@/i18n'
@@ -158,9 +159,7 @@ function handleLogout() {
   authStore.logout()
 }
 
-function handleChatSettings() {
-  router.push({ name: 'ChatSettings' })
-}
+const settingsOpen = ref(false)
 </script>
 
 <template>
@@ -287,7 +286,7 @@ function handleChatSettings() {
             :align="mobile ? 'center' : 'end'"
             class="w-48"
           >
-            <DropdownMenuItem @click="handleChatSettings">
+            <DropdownMenuItem @click="settingsOpen = true">
               <Settings class="mr-2 h-4 w-4" />
               {{ t('sidebar.userMenu.chatSettings') }}
             </DropdownMenuItem>
@@ -315,4 +314,6 @@ function handleChatSettings() {
       </SidebarFooter>
     </div>
   </aside>
+
+  <ChatSettings v-model:open="settingsOpen" />
 </template>

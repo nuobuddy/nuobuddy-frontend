@@ -20,15 +20,6 @@ const chatRoutes: RouteRecordRaw[] = [
       allowShare: true, // Allow shared access without auth via ?share=1
     },
   },
-  {
-    path: '/chat/settings',
-    name: 'ChatSettings',
-    component: () => import('@/views/chat/chatSettings.vue'),
-    meta: {
-      title: 'Chat Settings',
-      requiresAuth: true,
-    },
-  },
 ]
 
 export default chatRoutes
