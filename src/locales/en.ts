@@ -272,6 +272,8 @@ export default {
       copied: 'Copied',
       cancelShare: 'Cancel Share',
       close: 'Close',
+      shareCreated: 'Share link created',
+      shareCanceled: 'Share link removed',
       noAccessTitle: 'No Access',
       noAccessMessage:
         'This share link is invalid or you do not have access. Please contact the person who shared this link.',

@@ -271,6 +271,8 @@ export default {
       copied: '已复制',
       cancelShare: '取消分享',
       close: '关闭',
+      shareCreated: '分享链接已创建',
+      shareCanceled: '分享链接已取消',
       noAccessTitle: '无访问权限',
       noAccessMessage: '该分享链接已失效或无权访问，请联系链接提供者',
       loading: '加载中...',

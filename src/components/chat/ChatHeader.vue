@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PanelLeft, Share, Check, ClipboardPaste } from 'lucide-vue-next'
+import { toast } from 'vue-sonner'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -53,13 +54,13 @@ async function handleShareClick() {
 
   shareLoading.value = true
   try {
-    // Call API to create share link
-    const shareUrl = await chatStore.createShare(props.conversationId)
-    shareLink.value = shareUrl || generateShareLink()
+    // Call API to create share link, then build the frontend URL from the conversation id
+    await chatStore.createShare(props.conversationId)
+    shareLink.value = generateShareLink()
     isShared.value = true
+    toast.success(t('chat.share.shareCreated'))
   } catch (err) {
     console.error('Failed to create share:', err)
-    // Fallback to local URL generation
     shareLink.value = generateShareLink()
     isShared.value = currentShareStatus.value
   } finally {
@@ -78,6 +79,7 @@ async function handleCancelShare() {
     await chatStore.deleteShare(props.conversationId)
     isShared.value = false
     shareDialogOpen.value = false
+    toast.success(t('chat.share.shareCanceled'))
   } catch (err) {
     console.error('Failed to cancel share:', err)
   } finally {
