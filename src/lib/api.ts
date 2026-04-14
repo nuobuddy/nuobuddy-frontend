@@ -32,12 +32,38 @@ export interface Conversation {
   accessible?: boolean
 }
 
+export interface MessageAttachment {
+  id: string
+  name: string
+  size: number
+  mimeType: string | null
+  fileType: ChatFileType
+}
+
 // Message type for conversation detail
 export interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
   timestamp: string
+  attachments?: MessageAttachment[] | null
+}
+
+export type ChatFileType = 'image' | 'document' | 'audio' | 'video' | 'custom'
+
+export interface ChatMessageFile {
+  type: ChatFileType
+  transfer_method: 'local_file'
+  upload_file_id: string
+}
+
+export interface UploadedChatFile {
+  id: string
+  name: string
+  size: number
+  extension: string | null
+  mimeType: string | null
+  fileType: ChatFileType
 }
 
 // Conversation detail includes messages
@@ -186,6 +212,35 @@ export const api = {
   },
 
   /**
+   * Upload one file for chat message attachment
+   * POST /chat/files/upload
+   */
+  async uploadChatFile(file: File): Promise<UploadedChatFile> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await axiosInstance.post<UploadedChatFile>('/chat/files/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+
+    return response.data
+  },
+
+  /**
+   * Get file preview content for an uploaded chat file
+   * GET /chat/files/{fileId}/preview
+   */
+  async getChatFilePreview(fileId: string): Promise<Blob> {
+    const response = await axiosInstance.get<Blob>(`/chat/files/${fileId}/preview`, {
+      responseType: 'blob',
+    })
+
+    return response.data
+  },
+
+  /**
    * Send a chat message with SSE streaming
    * POST /chat/conversations/{id}/message
    * Uses native fetch for SSE stream (not axios)
@@ -195,6 +250,8 @@ export const api = {
     conversationId: string,
     query: string,
     onMessage: (event: SSEEvent) => void,
+    files?: ChatMessageFile[],
+    attachments?: MessageAttachment[],
   ): { promise: Promise<void>; abort: () => void } {
     const controller = new AbortController()
 
@@ -203,13 +260,27 @@ export const api = {
       const baseURL =
         (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_API_BASE ?? ''
 
+      const payload: {
+        query: string
+        files?: ChatMessageFile[]
+        attachments?: MessageAttachment[]
+      } = { query }
+
+      if (files && files.length > 0) {
+        payload.files = files
+      }
+
+      if (attachments && attachments.length > 0) {
+        payload.attachments = attachments
+      }
+
       const response = await fetch(`${baseURL}/chat/conversations/${conversationId}/message`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify(payload),
         signal: controller.signal,
       })
 

@@ -146,6 +146,7 @@ export default {
     stopGeneration: '停止生成',
     attachFile: '附加文件',
     attachImage: '附加图片',
+    attachments: '附件',
 
     // 对话管理
     newChat: '新对话',
@@ -208,8 +209,12 @@ export default {
     uploadDragDrop: '拖拽文件到此处，或点击选择',
     uploadFileSizeLimit: '文件大小不超过 {size}',
     uploadFileTypeLimit: '支持的格式：{types}',
+    uploadingFile: '文件上传中...',
     uploadSuccess: '上传成功',
     uploadFailed: '上传失败',
+    fileTooLarge: '文件大小超出限制。',
+    unsupportedFileType: '文件类型不被允许。',
+    invalidAttachmentPayload: '附件数据格式无效。',
     removeAttachment: '移除附件',
 
     // 模型 / Agent 设置

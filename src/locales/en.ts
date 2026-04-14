@@ -146,6 +146,7 @@ export default {
     stopGeneration: 'Stop generating',
     attachFile: 'Attach file',
     attachImage: 'Attach image',
+    attachments: 'Attachments',
 
     // Conversation management
     newChat: 'New Chat',
@@ -209,8 +210,12 @@ export default {
     uploadDragDrop: 'Drag and drop a file here, or click to select',
     uploadFileSizeLimit: 'Max file size: {size}',
     uploadFileTypeLimit: 'Supported formats: {types}',
+    uploadingFile: 'Uploading file...',
     uploadSuccess: 'Upload successful',
     uploadFailed: 'Upload failed',
+    fileTooLarge: 'File size exceeded.',
+    unsupportedFileType: 'File type not allowed.',
+    invalidAttachmentPayload: 'Invalid attachment payload.',
     removeAttachment: 'Remove attachment',
 
     // Model / Agent settings
