@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PanelLeft, Share, Check, ClipboardPaste } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
+import QRCode from 'qrcode'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -37,6 +38,7 @@ const shareLink = ref('')
 const isShared = ref(false)
 const copied = ref(false)
 const shareLoading = ref(false)
+const qrCanvas = ref<HTMLCanvasElement | null>(null)
 
 // Check if current conversation is already shared
 const currentShareStatus = computed(() => chatStore.currentConversation?.share ?? false)
@@ -47,6 +49,21 @@ function generateShareLink(): string {
   const baseUrl = window.location.origin
   return `${baseUrl}/chat/${props.conversationId}?share=1`
 }
+
+// Render QR code onto canvas whenever shareLink or canvas ref changes.
+// flush:'post' ensures the DOM has rendered before we draw.
+watch(
+  [shareLink, qrCanvas],
+  async ([link, canvas]) => {
+    if (!link || !canvas) return
+    await QRCode.toCanvas(canvas, link, {
+      width: 160,
+      margin: 1,
+      color: { dark: '#000000', light: '#ffffff' },
+    })
+  },
+  { flush: 'post' },
+)
 
 // Handle share button click
 async function handleShareClick() {
@@ -140,6 +157,11 @@ async function copyToClipboard() {
             {{ t('chat.share.dialogDescription') }}
           </DialogDescription>
         </DialogHeader>
+
+        <!-- QR Code: desktop only -->
+        <div v-if="shareLink" class="hidden sm:flex justify-center py-2">
+          <canvas ref="qrCanvas" class="rounded-lg border border-border p-3" />
+        </div>
 
         <div class="flex items-center space-x-2">
           <div class="grid flex-1 gap-2">

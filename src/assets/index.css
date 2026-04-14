@@ -151,3 +151,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .prose pre code {
+    padding: 0.875rem 1rem;
+  }
+}
